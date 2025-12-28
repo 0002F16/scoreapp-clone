@@ -79,56 +79,65 @@ export const ScoreMeter: React.FC<ScoreMeterProps> = ({
         y1={y1}
         x2={x2}
         y2={y2}
-        stroke={isFilled ? "#F97316" : "#E5E7EB"}
+        stroke={isFilled ? "#10B981" : "#D1FAE5"}
         strokeWidth={2}
       />
     );
   }
   
+  const roundedPercentage = Math.round(percentage);
+  
   return (
-    <div className="flex flex-col items-center">
-      {/* Percentage Display */}
-      <div className="text-6xl sm:text-7xl font-bold text-red-600 mb-4">
-        {Math.round(percentage)}%
+    <div className="flex flex-col items-center" aria-label={`Validation signal: ${roundedPercentage} percent`}>
+      {/* Percentage Display - smaller and muted */}
+      <div className="text-3xl sm:text-4xl font-semibold text-gray-600 mb-3">
+        {roundedPercentage}%
       </div>
       
-      {/* SVG Meter */}
-      <svg width={size} height={size / 2 + 20} viewBox={`0 0 ${size} ${size / 2 + 20}`} className="overflow-visible">
-        {/* Background arc (gray) */}
+      {/* SVG Meter - smaller size, rotated 90 degrees to the left */}
+      <svg 
+        width={size} 
+        height={size / 2 + 20} 
+        viewBox={`0 0 ${size} ${size / 2 + 20}`} 
+        className="overflow-visible"
+        style={{ transform: 'rotate(-90deg)', transformOrigin: `${centerX}px ${centerY}px` }}
+        aria-hidden="true"
+      >
+        {/* Background arc (light green) */}
         <path
           d={createArcPath(-90, 90, radius - 30, radius)}
-          fill="#E5E7EB"
+          fill="#D1FAE5"
         />
         
-        {/* Filled arc (orange gradient) */}
+        {/* Filled arc (green) */}
         {angle > 0 && (
           <path
             d={createArcPath(-90, endAngle, radius - 30, radius)}
-            fill="#F97316"
+            fill="#10B981"
           />
         )}
         
-        {/* Tick marks */}
+        {/* Tick marks - green colors */}
         <g>{ticks}</g>
         
-        {/* Needle */}
+        {/* Needle - green */}
         <g>
-          <circle cx={centerX} cy={centerY} r={8} fill="#3B82F6" />
+          <circle cx={centerX} cy={centerY} r={8} fill="#059669" />
           <line
             x1={centerX}
             y1={centerY}
             x2={needleX}
             y2={needleY}
-            stroke="#1E40AF"
-            strokeWidth={4}
+            stroke="#047857"
+            strokeWidth={3}
             strokeLinecap="round"
           />
         </g>
       </svg>
       
-      {/* Label */}
-      <div className="text-sm font-medium text-red-600 mt-2">
-        Your Overall Score
+      {/* Label - diagnostic, muted */}
+      <div className="text-xs text-gray-500 mt-2">
+        Validation signal
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { questions, Question, Choice } from "@/lib/quizData";
+import { getResultSegment } from "@/lib/resultsData";
 import { cn } from "@/lib/utils";
 
 interface UserData {
@@ -56,7 +57,7 @@ export default function QuizPage() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!currentQuestion || selectedChoices.length === 0) return;
 
     // Calculate points for this question
@@ -90,11 +91,14 @@ export default function QuizPage() {
         sessionStorage.setItem("quizScore", finalScore.toString());
       }
       
-      // Save score to database
-      saveScoreToDatabase(finalScore);
+      // Save score to database and send email
+      await saveScoreToDatabase(finalScore);
+      
+      // Check if email was sent (stored in sessionStorage by sendEmail function)
+      const emailSent = typeof window !== "undefined" && sessionStorage.getItem("emailSent") === "true";
       
       // Redirect to results page
-      router.push(`/results?score=${finalScore}`);
+      router.push(`/results?score=${finalScore}${emailSent ? "&emailSent=true" : ""}`);
     } else {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedChoices([]);
@@ -123,11 +127,52 @@ export default function QuizPage() {
         console.error("Error saving score:", data.error);
       } else {
         console.log("Score saved successfully:", data.message);
+        
+        // Send email after score is saved successfully
+        await sendEmail(score);
       }
     } catch (error) {
       console.error("Error saving quiz score:", error);
     } finally {
       setIsSavingScore(false);
+    }
+  };
+
+  const sendEmail = async (score: number) => {
+    if (!userData) return;
+
+    try {
+      const segment = getResultSegment(score);
+      
+      const response = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          score: score,
+          segment: segment,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Error sending email:", data.error);
+        // Don't block quiz completion if email fails
+      } else {
+        console.log("Email sent successfully:", data.message);
+        // Store email sent flag in sessionStorage for results page
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("emailSent", "true");
+        }
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      // Don't block quiz completion if email fails
     }
   };
 

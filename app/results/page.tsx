@@ -12,6 +12,56 @@ import { resultsContent, SectionContent } from "@/lib/resultsContent";
 import { questions } from "@/lib/quizData";
 import { cn } from "@/lib/utils";
 
+type Segment = "BUILDER_STUCK" | "BUILDER_LEARNING" | "BUILDER_READY";
+
+const SEGMENT_COPY: Record<Segment, {
+  headline: string;
+  subheadline: string;
+  supportLine: string;
+  rangeLabel: string;
+}> = {
+  BUILDER_STUCK: {
+    headline: "You're at the start. Your next move matters.",
+    subheadline: "Based on your results, you're still early in the journey—exploring if this idea is worth pursuing.",
+    supportLine: "Next: we'll show the fastest way to validate without wasting weeks (or money).",
+    rangeLabel: "Result: Builder Stuck (Score < 40)",
+  },
+  BUILDER_LEARNING: {
+    headline: "You've started. Now avoid the wrong build.",
+    subheadline: "You have momentum, but validation isn't strong enough yet to justify heavy building.",
+    supportLine: "Next: we'll pinpoint what to test first so you don't overbuild.",
+    rangeLabel: "Result: Builder Learning (Score 40–69)",
+  },
+  BUILDER_READY: {
+    headline: "You're ready to validate. Speed matters now.",
+    subheadline: "You're close to making costly decisions. The next step is to test with real users fast.",
+    supportLine: "Next: we'll outline the shortest path from prototype → real feedback.",
+    rangeLabel: "Result: Builder Ready (Score ≥ 70)",
+  },
+};
+
+const DIAGNOSIS_COPY: Record<Segment, {
+  whatsWorking: string;
+  whatsRisky: string;
+  whatHappensNext: string;
+}> = {
+  BUILDER_STUCK: {
+    whatsWorking: "You're taking time to think before building. You're not rushing into development without questioning whether the idea is worth pursuing.",
+    whatsRisky: "At this stage, it's easy to confuse thinking with progress. Research and planning can feel productive while avoiding real user validation.",
+    whatHappensNext: "Most founders stay here longer than expected. Momentum fades, confidence drops, and validation never actually happens.",
+  },
+  BUILDER_LEARNING: {
+    whatsWorking: "You've moved beyond ideation and started testing assumptions, which already puts you ahead of most early founders.",
+    whatsRisky: "Partial validation can be misleading. Polite feedback or limited signals often lead teams to build the wrong things.",
+    whatHappensNext: "Teams invest in building too early, then pivot after time and money have already been spent.",
+  },
+  BUILDER_READY: {
+    whatsWorking: "You have urgency, context, and the ability to act quickly — the core ingredients for real validation.",
+    whatsRisky: "Speed without clarity can lock in the wrong direction just as fast as the right one.",
+    whatHappensNext: "Founders either validate decisively and move forward — or build fast and undo decisions later.",
+  },
+};
+
 function ResultsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,6 +69,7 @@ function ResultsPageContent() {
   const [maxScore, setMaxScore] = useState<number>(100);
   const [profile, setProfile] = useState<ProfileSegment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [emailSent, setEmailSent] = useState<boolean>(false);
 
   useEffect(() => {
     // Calculate max possible score
@@ -42,6 +93,17 @@ function ResultsPageContent() {
       };
       return mapping[segment] || "builder_stuck";
     };
+
+    // Check for emailSent flag
+    const emailSentParam = searchParams.get("emailSent");
+    if (emailSentParam === "true") {
+      setEmailSent(true);
+    } else if (typeof window !== "undefined") {
+      const storedEmailSent = sessionStorage.getItem("emailSent");
+      if (storedEmailSent === "true") {
+        setEmailSent(true);
+      }
+    }
 
     // Get score from URL params or sessionStorage
     const scoreParam = searchParams.get("score");
@@ -114,6 +176,16 @@ function ResultsPageContent() {
   const primaryCTA = getPrimaryCTA();
   const emphasizedCTA = getEmphasizedCTA();
 
+  // Map profile segment to uppercase format for SEGMENT_COPY
+  const getSegmentKey = (profile: ProfileSegment): Segment => {
+    const mapping: Record<ProfileSegment, Segment> = {
+      builder_stuck: "BUILDER_STUCK",
+      builder_learning: "BUILDER_LEARNING",
+      builder_ready: "BUILDER_READY",
+    };
+    return mapping[profile];
+  };
+
   // Get content based on segmentation
   const getSectionContent = (sectionId: string): SectionContent => {
     if (!profile) {
@@ -131,48 +203,101 @@ function ResultsPageContent() {
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12 sm:py-16 lg:py-20">
-        {/* Section 1: Result Snapshot */}
-        <section className="mb-16 sm:mb-20">
+        {/* Section 1: Result Summary */}
+        <section 
+          className="mb-16 sm:mb-20" 
+          aria-labelledby="result-summary-title"
+        >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left: Text stack */}
             <div className="space-y-6">
-              <Typography variant="h1" className="text-gray-900">
-                {getSectionContent("result_snapshot").heading || " "}
-              </Typography>
-              {getSectionContent("result_snapshot").subheading && (
-                <Typography variant="lead">
-                  {getSectionContent("result_snapshot").subheading}
-                </Typography>
+              {profile && (
+                <>
+                  <Typography 
+                    variant="h1" 
+                    className="text-gray-900"
+                    as="h1"
+                    id="result-summary-title"
+                  >
+                    {SEGMENT_COPY[getSegmentKey(profile)].headline}
+                  </Typography>
+                  <Typography variant="lead">
+                    {SEGMENT_COPY[getSegmentKey(profile)].subheadline}
+                  </Typography>
+                  <Typography variant="small" className="text-gray-500">
+                    {SEGMENT_COPY[getSegmentKey(profile)].supportLine}
+                  </Typography>
+                  {emailSent && (
+                    <Typography variant="small" className="text-gray-500">
+                      We sent a copy of your result to your email so you can review it later.
+                    </Typography>
+                  )}
+                </>
               )}
-              {getSectionContent("result_snapshot").body && (
-                <div className="space-y-4">
-                  {getSectionContent("result_snapshot").body
-                    .split("\n\n")
-                    .filter((para) => para.trim())
-                    .map((paragraph, index) => (
-                      <Typography key={index} variant="body">
-                        {paragraph.trim()}
-                </Typography>
-                    ))}
-                </div>
-              )}
-              <div className="pt-4">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={() => handleCTAClick(getCTAURL(primaryCTA), primaryCTA)}
-                  className="w-full sm:w-auto"
-                >
-                  {getCTALabel(primaryCTA) || " "}
-                </Button>
-              </div>
             </div>
+            {/* Right: Meter */}
             <div className="flex justify-center lg:justify-end">
               <ScoreMeter score={score} maxScore={maxScore} />
             </div>
           </div>
         </section>
 
-        {/* Section 2: Who We Are */}
+        {/* Section 2: Why This Matters */}
+        <section className="mb-16 sm:mb-20">
+          {profile && (
+            <>
+              <Typography variant="h2" as="h2" className="mb-6">
+                Why this matters
+              </Typography>
+              
+              {/* Supporting Image */}
+              <div className="mb-12 relative w-full h-64 sm:h-80 lg:h-96 rounded-lg overflow-hidden bg-gray-100">
+                <Image
+                  src="/diagnosis.jpg"
+                  alt="Founder analyzing validation data and making strategic decisions"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 100vw"
+                  priority={false}
+                />
+              </div>
+
+              <div className="space-y-6 mt-6">
+                {/* What's working */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <Typography variant="h3" as="h3" className="mb-4 text-green-900">
+                    What's working
+                  </Typography>
+                  <Typography variant="body" className="text-gray-700">
+                    {DIAGNOSIS_COPY[getSegmentKey(profile)].whatsWorking}
+                  </Typography>
+                </div>
+                
+                {/* What's risky */}
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <Typography variant="h3" as="h3" className="mb-4 text-amber-900">
+                    What's risky
+                  </Typography>
+                  <Typography variant="body" className="text-gray-700">
+                    {DIAGNOSIS_COPY[getSegmentKey(profile)].whatsRisky}
+                  </Typography>
+                </div>
+                
+                {/* What usually happens next */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <Typography variant="h3" as="h3" className="mb-4 text-blue-900">
+                    What usually happens next
+                  </Typography>
+                  <Typography variant="body" className="text-gray-700">
+                    {DIAGNOSIS_COPY[getSegmentKey(profile)].whatHappensNext}
+                  </Typography>
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+
+        {/* Section 3: Who We Are */}
         <section className="mb-16 sm:mb-20">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 lg:gap-0 overflow-hidden rounded-lg">
             {/* Left side - Text content (2/3 width) */}
@@ -350,32 +475,7 @@ function ResultsPageContent() {
           </div>
         </section>
 
-        {/* Section 5: Why This Matters */}
-        <section className="mb-16 sm:mb-20">
-          <Typography variant="h2" className="mb-6">
-            {getSectionContent("why_this_matters").heading || " "}
-          </Typography>
-          {getSectionContent("why_this_matters").subheading && (
-            <Typography variant="lead" className="mb-4">
-              {getSectionContent("why_this_matters").subheading}
-            </Typography>
-          )}
-          {getSectionContent("why_this_matters").body && (
-            <Typography variant="body" className="mb-6">
-              {getSectionContent("why_this_matters").body}
-            </Typography>
-          )}
-          <ul className="space-y-3">
-            {getSectionContent("why_this_matters").bullets.map((bullet, index) => (
-              <li key={index} className="flex items-start">
-                <span className="text-primary mr-3 mt-1">•</span>
-                <Typography variant="body">{bullet || " "}</Typography>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Section 6: Program Snapshot */}
+        {/* Section 5: Program Snapshot */}
         <section className="mb-16 sm:mb-20">
           <Typography variant="h2" className="mb-6">
             {getSectionContent("program_snapshot").heading || " "}
