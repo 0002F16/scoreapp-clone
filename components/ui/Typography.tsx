@@ -1,11 +1,14 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-interface TypographyProps {
-  variant?: "h1" | "h2" | "h3" | "h4" | "body" | "small" | "lead";
+type TypographyVariant = "h1" | "h2" | "h3" | "h4" | "body" | "small" | "lead";
+type HTMLTag = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p" | "span" | "div" | "label" | "a";
+
+interface TypographyProps extends Omit<React.HTMLAttributes<HTMLElement>, "as"> {
+  variant?: TypographyVariant;
   className?: string;
   children: React.ReactNode;
-  as?: keyof JSX.IntrinsicElements;
+  as?: HTMLTag;
 }
 
 export const Typography: React.FC<TypographyProps> = ({
@@ -25,7 +28,7 @@ export const Typography: React.FC<TypographyProps> = ({
     small: "text-sm text-gray-500",
   };
 
-  const defaultComponents = {
+  const defaultComponents: Record<TypographyVariant, HTMLTag> = {
     h1: "h1",
     h2: "h2",
     h3: "h3",
@@ -35,10 +38,13 @@ export const Typography: React.FC<TypographyProps> = ({
     small: "p",
   };
 
-  const Component = (as || defaultComponents[variant]) as keyof JSX.IntrinsicElements;
+  const Component = (as || defaultComponents[variant]) as HTMLTag;
 
   return (
-    <Component className={cn(variants[variant], className)} {...props}>
+    <Component 
+      className={cn(variants[variant], className)} 
+      {...(props as any)}
+    >
       {children}
     </Component>
   );
