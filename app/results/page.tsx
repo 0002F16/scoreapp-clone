@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { ScoreMeter } from "@/components/ui/ScoreMeter";
 import { Typography } from "@/components/ui/Typography";
 import { getResultSegment } from "@/lib/resultsData";
-import { pagePlan, ProfileSegment, CTAType } from "@/lib/pagePlan";
-import { resultsContent, SectionContent } from "@/lib/resultsContent";
+import { ProfileSegment } from "@/lib/pagePlan";
 import { questions } from "@/lib/quizData";
-import { cn } from "@/lib/utils";
+import { diagnosisContent } from "@/lib/diagnosisContent";
 
 type Segment = "BUILDER_STUCK" | "BUILDER_LEARNING" | "BUILDER_READY";
 
@@ -40,27 +39,6 @@ const SEGMENT_COPY: Record<Segment, {
   },
 };
 
-const DIAGNOSIS_COPY: Record<Segment, {
-  whatsWorking: string;
-  whatsRisky: string;
-  whatHappensNext: string;
-}> = {
-  BUILDER_STUCK: {
-    whatsWorking: "You're taking time to think before building. You're not rushing into development without questioning whether the idea is worth pursuing.",
-    whatsRisky: "At this stage, it's easy to confuse thinking with progress. Research and planning can feel productive while avoiding real user validation.",
-    whatHappensNext: "Most founders stay here longer than expected. Momentum fades, confidence drops, and validation never actually happens.",
-  },
-  BUILDER_LEARNING: {
-    whatsWorking: "You've moved beyond ideation and started testing assumptions, which already puts you ahead of most early founders.",
-    whatsRisky: "Partial validation can be misleading. Polite feedback or limited signals often lead teams to build the wrong things.",
-    whatHappensNext: "Teams invest in building too early, then pivot after time and money have already been spent.",
-  },
-  BUILDER_READY: {
-    whatsWorking: "You have urgency, context, and the ability to act quickly — the core ingredients for real validation.",
-    whatsRisky: "Speed without clarity can lock in the wrong direction just as fast as the right one.",
-    whatHappensNext: "Founders either validate decisively and move forward — or build fast and undo decisions later.",
-  },
-};
 
 function ResultsPageContent() {
   const router = useRouter();
@@ -137,34 +115,6 @@ function ResultsPageContent() {
     router.push("/");
   }, [searchParams, router]);
 
-  const handleCTAClick = (url: string, ctaType: CTAType) => {
-    // For widget URLs, open in new window/tab
-    if (url.includes("api.ghlsandbox.net/widget")) {
-      window.open(url, "_blank", "width=800,height=600,scrollbars=yes,resizable=yes");
-    } else {
-      // For regular URLs, open in new tab
-      window.open(url, "_blank");
-    }
-  };
-
-  const getPrimaryCTA = (): CTAType => {
-    if (!profile) return "discoveryCall";
-    return pagePlan.segmentationLogic[profile].primaryCTA;
-  };
-
-  const getEmphasizedCTA = (): CTAType => {
-    if (!profile) return "discoveryCall";
-    return pagePlan.segmentationLogic[profile].emphasizedCTA;
-  };
-
-  const getCTALabel = (ctaType: CTAType): string => {
-    return pagePlan.globalCTAs[ctaType].label || " ";
-  };
-
-  const getCTAURL = (ctaType: CTAType): string => {
-    return pagePlan.globalCTAs[ctaType].url;
-  };
-
   if (isLoading || score === null || !profile) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -172,9 +122,6 @@ function ResultsPageContent() {
       </div>
     );
   }
-
-  const primaryCTA = getPrimaryCTA();
-  const emphasizedCTA = getEmphasizedCTA();
 
   // Map profile segment to uppercase format for SEGMENT_COPY
   const getSegmentKey = (profile: ProfileSegment): Segment => {
@@ -186,18 +133,15 @@ function ResultsPageContent() {
     return mapping[profile];
   };
 
-  // Get content based on segmentation
-  const getSectionContent = (sectionId: string): SectionContent => {
-    if (!profile) {
-      // Fallback to empty content if profile is not set
-      return { heading: " ", subheading: " ", body: " ", bullets: [] };
+  // Handle CTA clicks - opens widget URLs in popup window
+  const handleCTAClick = (url: string) => {
+    // For widget URLs, open in a popup window
+    if (url.includes("api.ghlsandbox.net/widget")) {
+      window.open(url, "_blank", "width=800,height=600,scrollbars=yes,resizable=yes");
+    } else {
+      // For regular URLs, open in new tab
+      window.open(url, "_blank");
     }
-    
-    if (sectionId === "result_snapshot" || sectionId === "final_nudge") {
-      const profileSpecificContent = resultsContent[sectionId as "result_snapshot" | "final_nudge"];
-      return profileSpecificContent[profile];
-    }
-    return resultsContent[sectionId as keyof typeof resultsContent] as SectionContent;
   };
 
   return (
@@ -242,494 +186,200 @@ function ResultsPageContent() {
           </div>
         </section>
 
-        {/* Section 2: Why This Matters */}
-        <section className="mb-16 sm:mb-20">
-          {profile && (
-            <>
-              <Typography variant="h2" as="h2" className="mb-6">
-                Why this matters
-              </Typography>
-              
-              {/* Supporting Image */}
-              <div className="mb-12 relative w-full h-64 sm:h-80 lg:h-96 rounded-lg overflow-hidden bg-gray-100">
-                <Image
-                  src="/diagnosis.jpg"
-                  alt="Founder analyzing validation data and making strategic decisions"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 100vw"
-                  priority={false}
-                />
-              </div>
-
-              <div className="space-y-6 mt-6">
-                {/* What's working */}
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
-                  <Typography variant="h3" as="h3" className="mb-4 text-green-900">
-                    What's working
-                  </Typography>
-                  <Typography variant="body" className="text-gray-700">
-                    {DIAGNOSIS_COPY[getSegmentKey(profile)].whatsWorking}
-                  </Typography>
-                </div>
+        {/* Section 2: Diagnosis */}
+        <section 
+          className="mb-16 sm:mb-20" 
+          aria-labelledby="diagnosis-title"
+        >
+          <div className="max-w-4xl mx-auto">
+            <div 
+              className={`
+                relative bg-white rounded-lg border-l-8 p-8 sm:p-10 lg:p-12
+                shadow-lg
+                ${
+                  profile === "builder_stuck"
+                    ? "border-amber-500 bg-amber-50/30"
+                    : profile === "builder_learning"
+                    ? "border-blue-500 bg-blue-50/30"
+                    : "border-green-500 bg-green-50/30"
+                }
+              `}
+            >
+              <div className="space-y-6">
+                <Typography variant="body" className="text-gray-700">
+                  At this stage, we typically see builders who {profile === "builder_stuck" ? "are" : "have"}:
+                </Typography>
                 
-                {/* What's risky */}
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
-                  <Typography variant="h3" as="h3" className="mb-4 text-amber-900">
-                    What's risky
+                <ul className="space-y-3 list-none">
+                  {diagnosisContent[profile].characteristics.map((characteristic, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="text-gray-400 mr-3 mt-1">•</span>
+                      <Typography variant="body" className="text-gray-700">
+                        {characteristic}
+                      </Typography>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="border-t border-gray-200 pt-6 space-y-4">
+                  <Typography variant="body" className="font-semibold text-gray-900">
+                    {diagnosisContent[profile].whatsWorking}
                   </Typography>
-                  <Typography variant="body" className="text-gray-700">
-                    {DIAGNOSIS_COPY[getSegmentKey(profile)].whatsRisky}
+                  
+                  <Typography variant="body" className="font-semibold text-gray-900">
+                    {diagnosisContent[profile].whatsFragile}
                   </Typography>
                 </div>
-                
-                {/* What usually happens next */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
-                  <Typography variant="h3" as="h3" className="mb-4 text-blue-900">
-                    What usually happens next
-                  </Typography>
-                  <Typography variant="body" className="text-gray-700">
-                    {DIAGNOSIS_COPY[getSegmentKey(profile)].whatHappensNext}
+
+                <div className="pt-2">
+                  <Typography variant="body" className="text-gray-700 whitespace-pre-line">
+                    {diagnosisContent[profile].stageDescription}
                   </Typography>
                 </div>
               </div>
-            </>
-          )}
-        </section>
-
-        {/* Section 3: Who We Are */}
-        <section className="mb-16 sm:mb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 lg:gap-0 overflow-hidden rounded-lg">
-            {/* Left side - Text content (2/3 width) */}
-            <div className="lg:col-span-2 bg-background p-8 sm:p-12 lg:p-16">
-              <div className="space-y-6">
-                <Typography variant="h1" className="text-white">
-                  {getSectionContent("who_we_are").heading || " "}
-                </Typography>
-                {getSectionContent("who_we_are").body && (
-                  <div className="space-y-4">
-                    {getSectionContent("who_we_are").body
-                      .split("\n\n")
-                      .filter((para) => para.trim())
-                      .map((paragraph, index) => (
-                        <Typography key={index} variant="body" className="text-white">
-                          {paragraph.trim()}
-                        </Typography>
-                      ))}
-                  </div>
-                )}
-              </div>
             </div>
-            {/* Right side - Image (1/3 width) */}
-            <div className="lg:col-span-1 relative bg-gray-200 min-h-[400px] lg:min-h-[600px]">
-              <div className="absolute top-4 right-4 lg:top-6 lg:right-6 z-10">
-                <Typography variant="small" className="text-white">
-                  Who we are
-                </Typography>
-              </div>
-              <div className="w-full h-full relative">
-                <Image
-                  src="/carlo.jpg"
-                  alt="Carlo, Founder of Startup PH Training"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 33vw"
-                  priority
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: What Happens */}
-        <section className="mb-16 sm:mb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-0 overflow-hidden rounded-lg">
-            {/* Left side - Image (1/2 width) */}
-            <div className="lg:col-span-1 relative bg-gray-200 min-h-[400px] lg:min-h-[500px]">
-              <div className="w-full h-full relative">
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-300">
-                  <div className="text-center p-4">
-                    <Typography variant="body" className="text-gray-500 mb-2">
-                      Placeholder Image
-                    </Typography>
-                    <Typography variant="small" className="text-gray-400">
-                      800×500px
-                    </Typography>
-                    <Typography variant="small" className="text-gray-400">
-                      (Landscape)
-                    </Typography>
-                  </div>
-                </div>
-                {/* Uncomment when image is ready */}
-                {/* <Image
-                  src="/workshop.jpg"
-                  alt="Workshop session with founders building their MVP"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                /> */}
-              </div>
-            </div>
-            {/* Right side - Text content (1/2 width) */}
-            <div className="lg:col-span-1 bg-white p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
-              <div className="space-y-6">
-                <Typography variant="h2" className="text-gray-900">
-                  {getSectionContent("what_happens").heading || " "}
-                </Typography>
-                {getSectionContent("what_happens").subheading && (
-                  <Typography variant="h4" className="text-gray-900 font-semibold">
-                    {getSectionContent("what_happens").subheading}
-                  </Typography>
-                )}
-                {getSectionContent("what_happens").body && (
-                  <Typography variant="body" className="text-gray-600">
-                    {getSectionContent("what_happens").body}
-                  </Typography>
-                )}
-                {getSectionContent("what_happens").bullets.length > 0 && (
-                  <ul className="space-y-3">
-                    {getSectionContent("what_happens").bullets.map((bullet, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="text-primary mr-3 mt-1 text-xl">✓</span>
-                        <Typography variant="body" className="text-gray-600">
-                          {bullet || " "}
-                        </Typography>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="pt-4">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={() => handleCTAClick(getCTAURL("signupForm"), "signupForm")}
-                    className="w-full sm:w-auto"
-                  >
-                    Register for our workshop
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 4: Coaching Program (Mirrored) */}
-        <section className="mb-16 sm:mb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-0 overflow-hidden rounded-lg">
-            {/* Left side - Text content (1/2 width) */}
-            <div className="lg:col-span-1 bg-white p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
-              <div className="space-y-6">
-                <Typography variant="h2" className="text-gray-900">
-                  {getSectionContent("coaching_program").heading || " "}
-                </Typography>
-                {getSectionContent("coaching_program").body && (
-                  <div className="space-y-4">
-                    {getSectionContent("coaching_program").body
-                      .split("\n\n")
-                      .filter((para) => para.trim())
-                      .map((paragraph, index) => (
-                        <Typography key={index} variant="body" className="text-gray-600">
-                          {paragraph.trim()}
-                        </Typography>
-                      ))}
-                  </div>
-                )}
-                <div className="pt-4">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={() => handleCTAClick(getCTAURL("signupForm"), "signupForm")}
-                    className="w-full sm:w-auto"
-                  >
-                    Register for our workshop
-                  </Button>
-                </div>
-              </div>
-            </div>
-            {/* Right side - Image (1/2 width) */}
-            <div className="lg:col-span-1 relative bg-gray-200 min-h-[400px] lg:min-h-[500px]">
-              <div className="w-full h-full relative">
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-300">
-                  <div className="text-center p-4">
-                    <Typography variant="body" className="text-gray-500 mb-2">
-                      Placeholder Image
-                    </Typography>
-                    <Typography variant="small" className="text-gray-400">
-                      400×600px
-                    </Typography>
-                    <Typography variant="small" className="text-gray-400">
-                      (Portrait)
-                    </Typography>
-                  </div>
-                </div>
-                {/* Uncomment when image is ready */}
-                {/* <Image
-                  src="/coaching.jpg"
-                  alt="Coaching session with founders"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                /> */}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 5: Program Snapshot */}
-        <section className="mb-16 sm:mb-20">
-          <Typography variant="h2" className="mb-6">
-            {getSectionContent("program_snapshot").heading || " "}
-          </Typography>
-          {getSectionContent("program_snapshot").subheading && (
-            <Typography variant="lead" className="mb-4">
-              {getSectionContent("program_snapshot").subheading}
-            </Typography>
-          )}
-          {getSectionContent("program_snapshot").body && (
-            <Typography variant="body" className="mb-6">
-              {getSectionContent("program_snapshot").body}
-            </Typography>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {getSectionContent("program_snapshot").bullets.map((step, index) => (
-              <div key={index} className="p-6 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-primary mb-2">{index + 1}</div>
-                <Typography variant="body">{step || " "}</Typography>
-              </div>
-            ))}
-          </div>
-          {pagePlan.sections.find(s => s.id === "program_snapshot")?.contentPlaceholders.cta && (
-            <div className="pt-4">
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => handleCTAClick(getCTAURL("discoveryCall"), "discoveryCall")}
-              >
-                {getCTALabel("discoveryCall") || " "}
-              </Button>
-            </div>
-          )}
-        </section>
-
-        {/* Section 7: Investment */}
-        <section className="mb-16 sm:mb-20">
-          <Typography variant="h2" className="mb-6">
-            {getSectionContent("investment").heading || " "}
-          </Typography>
-          {getSectionContent("investment").subheading && (
-            <Typography variant="lead" className="mb-4">
-              {getSectionContent("investment").subheading}
-            </Typography>
-          )}
-          <div className="bg-gray-50 p-8 rounded-lg mb-6">
-            <div className="space-y-4">
-              <div>
-                <Typography variant="h3" className="text-gray-900 mb-2">
-                  Standard Rate: ₱49,800
-                </Typography>
-              </div>
-              <div>
-                <Typography variant="h4" className="text-primary mb-2">
-                  Founders Launch Rate: ₱24,950
-                </Typography>
-                <Typography variant="small" className="text-gray-600">
-                  (For the first 5 founders who enroll)
-                </Typography>
-              </div>
-            </div>
-          </div>
-          {getSectionContent("investment").body && (
-            <Typography variant="body" className="mb-4">
-              {getSectionContent("investment").body}
-            </Typography>
-          )}
-          <ul className="space-y-3">
-            {getSectionContent("investment").bullets.map((bullet, index) => (
-              <li key={index} className="flex items-start">
-                <span className="text-primary mr-3 mt-1">•</span>
-                <Typography variant="body">{bullet || " "}</Typography>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Section 8: Who This Is For */}
-        <section className="mb-16 sm:mb-20">
-          <Typography variant="h2" className="mb-6">
-            {getSectionContent("who_this_is_for").heading || " "}
-          </Typography>
-          {getSectionContent("who_this_is_for").subheading && (
-            <Typography variant="lead" className="mb-4">
-              {getSectionContent("who_this_is_for").subheading}
-            </Typography>
-          )}
-          {getSectionContent("who_this_is_for").body && (
-            <Typography variant="body" className="mb-6">
-              {getSectionContent("who_this_is_for").body}
-            </Typography>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <Typography variant="h4" className="text-green-600 mb-4">
-                Who this is for
-              </Typography>
-              <ul className="space-y-2">
-                {getSectionContent("who_this_is_for").bullets.slice(0, Math.ceil(getSectionContent("who_this_is_for").bullets.length / 2)).map((item, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="text-green-600 mr-3 mt-1">✓</span>
-                    <Typography variant="body">{item || " "}</Typography>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <Typography variant="h4" className="text-red-600 mb-4">
-                Who this is not for
-              </Typography>
-              <ul className="space-y-2">
-                {getSectionContent("who_this_is_for").bullets.slice(Math.ceil(getSectionContent("who_this_is_for").bullets.length / 2)).map((item, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="text-red-600 mr-3 mt-1">✗</span>
-                    <Typography variant="body">{item || " "}</Typography>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 9: Ways to Move Forward */}
-        <section className="mb-16 sm:mb-20">
-          <Typography variant="h2" className="mb-6">
-            {getSectionContent("ways_to_move_forward").heading || " "}
-          </Typography>
-          {getSectionContent("ways_to_move_forward").subheading && (
-            <Typography variant="lead" className="mb-4">
-              {getSectionContent("ways_to_move_forward").subheading}
-            </Typography>
-          )}
-          {getSectionContent("ways_to_move_forward").body && (
-            <Typography variant="body" className="mb-6">
-              {getSectionContent("ways_to_move_forward").body}
-            </Typography>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Discovery Call Card */}
-            <div
-              className={cn(
-                "p-6 rounded-lg border-2 transition-all",
-                emphasizedCTA === "discoveryCall"
-                  ? "border-primary bg-primary-50 shadow-lg"
-                  : "border-gray-200 bg-white hover:border-primary-300"
-              )}
-            >
-              <Typography variant="h4" className="mb-3">
-                Discovery Call
-              </Typography>
-              <Typography variant="body" className="mb-4">
-                Schedule a call to discuss your specific situation and get clarity on next steps.
-              </Typography>
-              {emphasizedCTA === "discoveryCall" && (
-                <div className="mb-3">
-                  <span className="text-xs font-semibold text-primary bg-primary-100 px-2 py-1 rounded">
-                    RECOMMENDED
-                  </span>
-                </div>
-              )}
-              <Button
-                variant={emphasizedCTA === "discoveryCall" ? "primary" : "outline"}
-                size="md"
-                className="w-full"
-                onClick={() => handleCTAClick(getCTAURL("discoveryCall"), "discoveryCall")}
-              >
-                {getCTALabel("discoveryCall") || "Schedule Discovery Call"}
-              </Button>
-            </div>
-
-            {/* Signup Form Card */}
-            <div
-              className={cn(
-                "p-6 rounded-lg border-2 transition-all",
-                emphasizedCTA === "signupForm"
-                  ? "border-primary bg-primary-50 shadow-lg"
-                  : "border-gray-200 bg-white hover:border-primary-300"
-              )}
-            >
-              <Typography variant="h4" className="mb-3">
-                Signup Form
-              </Typography>
-              <Typography variant="body" className="mb-4">
-                Ready to enroll? Complete the signup form to secure your spot in the program.
-              </Typography>
-              {emphasizedCTA === "signupForm" && (
-                <div className="mb-3">
-                  <span className="text-xs font-semibold text-primary bg-primary-100 px-2 py-1 rounded">
-                    RECOMMENDED
-                  </span>
-                </div>
-              )}
-              <Button
-                variant={emphasizedCTA === "signupForm" ? "primary" : "outline"}
-                size="md"
-                className="w-full"
-                onClick={() => handleCTAClick(getCTAURL("signupForm"), "signupForm")}
-              >
-                {getCTALabel("signupForm") || "Sign Up Now"}
-              </Button>
-            </div>
-
-            {/* Contact Us Card */}
-            <div
-              className={cn(
-                "p-6 rounded-lg border-2 transition-all",
-                "border-gray-200 bg-white hover:border-primary-300"
-              )}
-            >
-              <Typography variant="h4" className="mb-3">
-                Contact Us
-              </Typography>
-              <Typography variant="body" className="mb-4">
-                Have questions? Reach out to our team for more information.
-              </Typography>
-              <Button
-                variant="outline"
-                size="md"
-                className="w-full"
-                onClick={() => handleCTAClick(getCTAURL("contactUs"), "contactUs")}
-              >
-                {getCTALabel("contactUs") || "Contact Us"}
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 10: Final Nudge */}
-        <section className="mb-8">
-          <Typography variant="h2" className="mb-6">
-            {getSectionContent("final_nudge").heading || " "}
-          </Typography>
-          {getSectionContent("final_nudge").subheading && (
-            <Typography variant="lead" className="mb-4">
-              {getSectionContent("final_nudge").subheading}
-            </Typography>
-          )}
-          {getSectionContent("final_nudge").body && (
-            <Typography variant="body" className="mb-6">
-              {getSectionContent("final_nudge").body}
-            </Typography>
-          )}
-          <div className="pt-4">
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => handleCTAClick(getCTAURL(primaryCTA), primaryCTA)}
-              className="w-full sm:w-auto"
-            >
-              {getCTALabel(primaryCTA) || " "}
-            </Button>
           </div>
         </section>
       </div>
+
+      {/* Section 3: Pressure-Test Your Idea - Full Width */}
+      <section className="w-full">
+        <div className="bg-background py-12 sm:py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              {/* Left: Image */}
+              <div className="relative w-full aspect-[4/5] max-w-md mx-auto lg:max-w-none">
+                <Image
+                  src="/Carlo P Valencia.jpg"
+                  alt="Carlo Valencia, Founder of Startup PH Training"
+                  fill
+                  className="object-cover rounded-lg"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              </div>
+              {/* Right: Text Content */}
+              <div className="text-center lg:text-left space-y-6">
+                <Typography variant="h2" as="h2" className="text-white">
+                  Pressure-test your idea with someone outside your bubble
+                </Typography>
+                <Typography variant="body" className="text-white">
+                  If you want, you can book a free call to walk through where you are and what you're about to commit to.
+                </Typography>
+                <Typography variant="body" className="font-semibold text-white">
+                  This isn't a sales call.
+                  <br />
+                  It's a chance to sanity-check your direction before you go further.
+                </Typography>
+                <div className="pt-4">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={() => handleCTAClick("https://api.ghlsandbox.net/widget/booking/B7cMXh3yR0sMoOaaHiwV")}
+                  >
+                    Book a Free Call
+                  </Button>
+                </div>
+                <Typography variant="small" className="text-white">
+                  No obligation. No pressure. Just clarity.
+                </Typography>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 3.5: What Happens on the Call */}
+      <section className="w-full">
+        <div className="bg-background py-12 sm:py-16 lg:py-20">
+          <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12">
+            <Typography variant="h2" as="h2" className="text-white mb-8 sm:mb-10 text-center">
+              What Happens on the Call
+            </Typography>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 mb-8">
+              {/* What we'll do */}
+              <div className="space-y-4">
+                <Typography variant="h3" as="h3" className="text-white font-semibold">
+                  On the call, we'll:
+                </Typography>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <span className="text-white mr-3 mt-1">•</span>
+                    <Typography variant="body" className="text-white">
+                      Walk through your idea and what you've already validated
+                    </Typography>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-white mr-3 mt-1">•</span>
+                    <Typography variant="body" className="text-white">
+                      Identify which assumptions matter most right now
+                    </Typography>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-white mr-3 mt-1">•</span>
+                    <Typography variant="body" className="text-white">
+                      Talk through whether your current timing and direction make sense
+                    </Typography>
+                  </li>
+                </ul>
+              </div>
+
+              {/* What won't happen */}
+              <div className="space-y-4">
+                <Typography variant="h3" as="h3" className="text-white font-semibold">
+                  What won't happen:
+                </Typography>
+                <ul className="space-y-3">
+                  <li className="flex items-start">
+                    <span className="text-white mr-3 mt-1">•</span>
+                    <Typography variant="body" className="text-white">
+                      No pitching
+                    </Typography>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-white mr-3 mt-1">•</span>
+                    <Typography variant="body" className="text-white">
+                      No forcing you into anything
+                    </Typography>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-white mr-3 mt-1">•</span>
+                    <Typography variant="body" className="text-white">
+                      No expectation to move forward beyond the conversation
+                    </Typography>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="text-center pt-4 border-t border-white/20">
+              <Typography variant="body" className="text-white">
+                The call usually takes <span className="font-semibold">30–45 minutes</span>.
+              </Typography>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 4: If You're Not Ready Yet - Full Width */}
+      <section className="w-full">
+        <div className="bg-primary py-12 sm:py-16 lg:py-20">
+          <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 text-center space-y-6">
+            <Typography variant="h2" as="h2" className="text-white">
+              If You're Not Ready Yet
+            </Typography>
+            <Typography variant="body" className="text-white">
+              We've sent a copy of your results to your email so you can review them later.
+            </Typography>
+            <Typography variant="body" className="text-white">
+              You don't need to decide anything today.
+              <br />
+              When you're ready to pressure-test your next move, the option is there.
+            </Typography>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

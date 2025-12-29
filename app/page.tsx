@@ -162,87 +162,84 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right Panel - Image Placeholder */}
-        <div className="flex-1 lg:flex-1 relative bg-gray-800 min-h-[400px] sm:min-h-[500px] lg:min-h-screen">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-white text-center px-8 w-full h-full flex items-center justify-center">
-              <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                <p className="text-gray-400 text-sm sm:text-base">Image Placeholder</p>
-              </div>
-            </div>
-          </div>
+        {/* Right Panel - Stock Image */}
+        <div className="flex-1 lg:flex-1 relative min-h-[400px] sm:min-h-[500px] lg:min-h-screen overflow-hidden bg-gray-800 hero-image">
+          {/* Subtle overlay to ensure text readability and brand consistency */}
+          <div className="absolute inset-0 bg-gradient-to-br from-background/40 via-background/20 to-transparent pointer-events-none z-10" />
         </div>
       </section>
 
       {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <h2 className="text-xl font-semibold text-gray-900 text-center mb-6">
-          Enter your details below to start the scorecard
-        </h2>
+      {isModalOpen && (
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <h2 className="text-xl font-semibold text-gray-900 text-center mb-6">
+            Enter your details below to start the scorecard
+          </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {submitMessage && (
-            <div
-              className={`p-3 rounded-md text-sm ${
-                submitMessage.type === "success"
-                  ? "bg-green-50 text-green-800 border border-green-200"
-                  : "bg-red-50 text-red-800 border border-red-200"
-              }`}
-            >
-              {submitMessage.text}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {submitMessage && (
+              <div
+                className={`p-3 rounded-md text-sm ${
+                  submitMessage.type === "success"
+                    ? "bg-green-50 text-green-800 border border-green-200"
+                    : "bg-red-50 text-red-800 border border-red-200"
+                }`}
+              >
+                {submitMessage.text}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="First name*"
+                name="firstName"
+                type="text"
+                placeholder="First name"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                error={errors.firstName}
+                required
+                disabled={isSubmitting}
+              />
+              <Input
+                label="Last name*"
+                name="lastName"
+                type="text"
+                placeholder="Last name"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                error={errors.lastName}
+                required
+                disabled={isSubmitting}
+              />
             </div>
-          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="First name*"
-              name="firstName"
-              type="text"
-              placeholder="First name"
-              value={formData.firstName}
+              label="Email *"
+              name="email"
+              type="email"
+              placeholder="Email"
+              value={formData.email}
               onChange={handleInputChange}
-              error={errors.firstName}
+              error={errors.email}
               required
               disabled={isSubmitting}
             />
-            <Input
-              label="Last name*"
-              name="lastName"
-              type="text"
-              placeholder="Last name"
-              value={formData.lastName}
-              onChange={handleInputChange}
-              error={errors.lastName}
-              required
-              disabled={isSubmitting}
-            />
-          </div>
 
-          <Input
-            label="Email *"
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleInputChange}
-            error={errors.email}
-            required
-            disabled={isSubmitting}
-          />
-
-          <div className="pt-4">
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Submitting..." : "Start"}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+            <div className="pt-4">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Start"}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </main>
   );
 }

@@ -52,3 +52,5 @@ export function getResultSegment(score: number): string {
 
 
 
+
+
