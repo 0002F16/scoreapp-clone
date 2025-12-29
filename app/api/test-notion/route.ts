@@ -77,14 +77,23 @@ export async function GET() {
       existingProperties.includes(prop)
     );
 
+    // Safely extract title - handle different response types
+    let databaseTitle = "Untitled";
+    if ("title" in database && Array.isArray(database.title) && database.title.length > 0) {
+      const titleItem = database.title[0];
+      if (titleItem && "plain_text" in titleItem) {
+        databaseTitle = titleItem.plain_text;
+      }
+    }
+
     return NextResponse.json(
       {
         success: true,
         message: "Notion connection successful!",
         database: {
           id: database.id,
-          title: database.title[0]?.plain_text || "Untitled",
-          url: database.url,
+          title: databaseTitle,
+          url: "url" in database ? database.url : undefined,
         },
         properties: {
           total: existingProperties.length,
