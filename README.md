@@ -124,14 +124,146 @@ If successful, check your inbox (and spam folder) for the test email. If you don
 
 ## Deployment to Vercel
 
-1. Push your code to a Git repository
-2. Import your project in Vercel
-3. Add the following environment variables in Vercel's project settings:
-   - `NOTION_API_KEY`
-   - `NOTION_DATABASE_ID`
-   - `RESEND_API_KEY`
-   - `RESEND_FROM_EMAIL` (optional, but recommended for production)
-4. Deploy
+### Prerequisites
+
+1. **Git Repository**: Make sure your code is pushed to a Git repository (GitHub, GitLab, or Bitbucket)
+2. **Vercel Account**: Sign up for a free account at [vercel.com](https://vercel.com)
+
+### Step-by-Step Deployment
+
+#### Option 1: Deploy via Vercel Dashboard (Recommended for first-time deployment)
+
+1. **Push your code to Git:**
+   ```bash
+   git init  # if not already initialized
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin <your-repository-url>
+   git push -u origin main
+   ```
+
+2. **Import your project:**
+   - Go to [vercel.com/new](https://vercel.com/new)
+   - Click "Import Git Repository"
+   - Select your repository (GitHub, GitLab, or Bitbucket)
+   - Authorize Vercel to access your repository if prompted
+
+3. **Configure your project:**
+   - **Framework Preset**: Vercel will auto-detect Next.js (should show "Next.js")
+   - **Root Directory**: Leave as `./` (default)
+   - **Build Command**: `npm run build` (auto-detected)
+   - **Output Directory**: `.next` (auto-detected)
+   - **Install Command**: `npm install` (auto-detected)
+
+4. **Add Environment Variables:**
+   Before deploying, click "Environment Variables" and add:
+   
+   | Variable Name | Value | Notes |
+   |--------------|-------|-------|
+   | `NOTION_API_KEY` | Your Notion API key | Required |
+   | `NOTION_DATABASE_ID` | Your Notion database ID | Required |
+   | `RESEND_API_KEY` | Your Resend API key | Required |
+   | `RESEND_FROM_EMAIL` | Your verified email | Optional (defaults to `onboarding@resend.dev`) |
+
+   **Important:** Make sure to add these for all environments (Production, Preview, and Development) or at least for Production.
+
+5. **Deploy:**
+   - Click "Deploy"
+   - Wait for the build to complete (usually 1-2 minutes)
+   - Your app will be live at `https://your-project-name.vercel.app`
+
+#### Option 2: Deploy via Vercel CLI
+
+1. **Install Vercel CLI:**
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Login to Vercel:**
+   ```bash
+   vercel login
+   ```
+
+3. **Deploy:**
+   ```bash
+   vercel
+   ```
+   
+   Follow the prompts:
+   - Link to existing project or create new
+   - Set up and develop? No (unless you want to test locally)
+   - Override settings? No (defaults are fine)
+
+4. **Add Environment Variables:**
+   ```bash
+   vercel env add NOTION_API_KEY
+   vercel env add NOTION_DATABASE_ID
+   vercel env add RESEND_API_KEY
+   vercel env add RESEND_FROM_EMAIL
+   ```
+   
+   For each variable, select which environments to apply it to (Production, Preview, Development).
+
+5. **Deploy to Production:**
+   ```bash
+   vercel --prod
+   ```
+
+### Post-Deployment Checklist
+
+After deployment, verify everything works:
+
+1. **Test your live site:**
+   - Visit your Vercel URL
+   - Check that the landing page loads correctly
+
+2. **Test API endpoints:**
+   - `https://your-project.vercel.app/api/test-notion` - Should return success
+   - `https://your-project.vercel.app/api/test-email?email=your-email@example.com` - Should send a test email
+
+3. **Test form submission:**
+   - Fill out and submit the form on your landing page
+   - Verify data appears in your Notion database
+   - Check that confirmation emails are sent
+
+### Custom Domain (Optional)
+
+1. Go to your project settings in Vercel dashboard
+2. Navigate to "Domains"
+3. Add your custom domain
+4. Follow DNS configuration instructions
+5. Vercel will automatically provision SSL certificates
+
+### Environment Variables Best Practices
+
+- **Never commit `.env.local`** to Git (already in `.gitignore`)
+- Use Vercel's environment variables for all secrets
+- Use different environment variables for Production vs Preview if needed
+- Rotate API keys periodically for security
+
+### Troubleshooting
+
+**Build fails:**
+- Check build logs in Vercel dashboard
+- Ensure all dependencies are in `package.json`
+- Verify Node.js version (Vercel uses Node 18.x by default)
+
+**Environment variables not working:**
+- Make sure variables are added for the correct environment (Production/Preview/Development)
+- Redeploy after adding new environment variables
+- Check variable names match exactly (case-sensitive)
+
+**API routes returning errors:**
+- Verify all environment variables are set correctly
+- Check Vercel function logs in the dashboard
+- Test endpoints individually using the test routes
+
+### Continuous Deployment
+
+Once connected to Git, Vercel will automatically:
+- Deploy new commits to the main branch to Production
+- Create Preview deployments for pull requests
+- Run builds automatically on every push
 
 ## Design System Components
 
